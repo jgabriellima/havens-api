@@ -1,6 +1,6 @@
 # Guia de Contribuição
 
-Agradecemos seu interesse em contribuir para o nosso projeto! Este documento fornece diretrizes para garantir um processo de contribuição suave e eficiente.
+Este documento fornece diretrizes para garantir um processo de contribuição suave e eficiente.
 
 ## Índice
 
