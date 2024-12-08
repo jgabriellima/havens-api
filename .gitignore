@@ -6,3 +6,5 @@ npm-debug.log
 .sqlite
 .coverage
 htmlcov/
+__pycache__
+.pytest_cache

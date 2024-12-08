@@ -19,7 +19,7 @@ fi
 # Function to start the Celery healthcheck service
 start_healthcheck() {
   echo "Starting Celery healthcheck service..."
-  python -m uvicorn api_template.celery.health_check:router --host 0.0.0.0 --port 8001 &
+  python -m uvicorn api_template.celery.core.health_check:router --host 0.0.0.0 --port 8001 &
 }
 
 # Function to check if a service is ready
@@ -64,21 +64,21 @@ elif [ "$MODE" = "worker" ]; then
     start_healthcheck  # Start healthcheck service before launching the worker
     if [ "$ENV" = "dev" ]; then
       # Development mode with autoreload
-      exec celery -A api_template.celery.app.celery_app worker --loglevel=${LOG_LEVEL:-info} --pool=solo &
+      exec celery -A api_template.celery.celery_app worker --loglevel=${LOG_LEVEL:-info} --pool=solo &
     else
       # Production mode
-      exec celery -A api_template.celery.app.celery_app worker --loglevel=${LOG_LEVEL:-info} &
+      exec celery -A api_template.celery.celery_app worker --loglevel=${LOG_LEVEL:-info} &
     fi
     PID=$!
     wait $PID
 elif [ "$MODE" = "beat" ]; then
     echo "Starting Celery beat..."
-    exec celery -A api_template.celery.app.celery_app beat --loglevel=${LOG_LEVEL:-info} &
+    exec celery -A api_template.celery.celery_app beat --loglevel=${LOG_LEVEL:-info} &
     PID=$!
     wait $PID
 elif [ "$MODE" = "flower" ]; then
     echo "Starting Flower Monitoring..."
-    exec celery -A api_template.celery.app.celery_app flower &
+    exec celery -A api_template.celery.celery_app flower &
     PID=$!
     wait $PID
 elif [ "$MODE" = "debug" ]; then

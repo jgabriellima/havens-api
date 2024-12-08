@@ -7,11 +7,19 @@ from celery.schedules import crontab
 from pydantic import Field, ValidationError
 from pydantic_settings import BaseSettings
 
-from api_template.queue.config.queue_types import QueueType
+from enum import Enum
+
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
+
+
+class QueueType(Enum):
+    KAFKA = "kafka"
+    REDIS = "redis"
+    RABBITMQ = "rabbitmq"
+    SQS = "sqs"
 
 class CelerySettings(BaseSettings):
     # Integrating Celery settings
