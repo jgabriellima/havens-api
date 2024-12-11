@@ -1,7 +1,6 @@
 """
 Example of how to use the API setup to discover handlers and execute operations
 """
-from api_template.api.v1.schemas.websearch_schema import WebSearchData, WebSearchResponse
 from api_template.external.core.setup import APISetup
 
 
@@ -55,10 +54,6 @@ def tavily_api(api_setup):
 if __name__ == "__main__":
     api_setup = init()
 
-    response = tavily_api(api_setup)
-    res = WebSearchResponse(
-        query="o que é o TCE-PA?", results=[WebSearchData(**r) for r in response.get("results")]
-    )
-    print(res)
+    pass
 
     # get_operation_details(api_setup)

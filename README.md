@@ -458,6 +458,7 @@ Para executar o Black manualmente:
 poetry run black .
 ```
 
+
 Para verificar sem fazer alterações:
 ```bash
 poetry run black --check .
@@ -573,3 +574,82 @@ Para mais detalhes sobre nossas práticas de qualidade de código, consulte:
 ## Licença
 
 Este projeto está licenciado sob a Licença MIT - veja o arquivo LICENSE para detalhes.
+
+
+# Exemple
+
+
+# Construir e executar os testes
+```bash
+docker-compose -f docker-compose.test.yml up --build test
+```
+
+# Ou, se quiser ver os logs em tempo real
+```bash
+docker-compose -f docker-compose.test.yml up --build test --abort-on-container-exit
+
+```
+
+# Executar um arquivo de teste específico
+```bash
+docker-compose -f docker-compose.test.yml run --rm test pytest tests/services/test_task_service.py -v
+```
+
+# Executar um teste específico
+```bash
+docker-compose -f docker-compose.test.yml run --rm test pytest tests/services/test_task_service.py::TestTaskService::test_create_task -v
+```
+
+
+Lembre-se de que você precisa ter suas migrações Alembic prontas antes de executar os testes. Se ainda não tiver as migrações, você pode criá-las com:
+
+----
+
+```bash 
+   docker-compose run --rm api bash
+   alembic revision --autogenerate -m "initial"
+```
+
+---- 
+```bash
+
+docker-compose run --rm api alembic revision --autogenerate -m "initial"
+```
+
+
+pode executar o comando para gerar as migrações:
+
+# Primeiro, garanta que o banco de dados está rodando
+```bash
+docker-compose up -d postgres
+```
+
+# Então gere a migração inicial
+```bash
+docker-compose run --rm api alembic revision --autogenerate -m "initial"
+```
+
+# Aplique a migração
+```bash
+docker-compose run --rm api alembic upgrade head
+```
+
+Para o ambiente de teste, você precisará fazer o mesmo processo, mas usando o banco de dados de teste:
+```bash
+docker-compose run --rm api alembic revision --autogenerate -m "initial"
+```
+
+```bash
+docker-compose run --rm api alembic upgrade head
+```
+
+
+
+
+
+
+docker-compose run --rm -e MODE=test api pytest tests/services/test_client_user_service.py::TestClientUserService::test_create_user_success -v
+docker-compose run --rm -e MODE=test api pytest tests/services/test_client_user_service.py -v --cov=api_template
+docker-compose run --rm -e MODE=test api pytest tests/services/test_assistant_service.py -v --cov=api_template
+
+docker-compose run --rm -e MODE=test api pytest tests/ -v --cov=api_template

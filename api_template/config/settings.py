@@ -1,6 +1,6 @@
 import logging
 import traceback
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     QUEUE_PASSWORD: str = Field(..., validation_alias="QUEUE_PASSWORD")
 
     # Queue settings
-    TAVILY_API_KEY: str = Field(..., validation_alias="TAVILY_API_KEY")
+    TAVILY_API_KEY: Optional[str] = Field(None, validation_alias="TAVILY_API_KEY")
 
     class Config:
         env_file = ".env"

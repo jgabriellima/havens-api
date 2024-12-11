@@ -7,12 +7,14 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        ENV: ${ENV:-prod}
+        - ENV=${ENV:-prod}
+        - AZURE_DEVOPS_PAT=${AZURE_DEVOPS_PAT}
     deploy:
       replicas: 1
     env_file:
       - .env
     environment:
+      - PYTHONPATH=/app
       - MODE=api
       - API_PORT=8000
       - API_WORKERS=2
@@ -34,6 +36,7 @@ services:
         max-file: "5"
     volumes:
       - .:/app
+      - ./alembic/versions:/app/alembic/versions
     depends_on:
       - redis
       - postgres
@@ -108,8 +111,10 @@ services:
     env_file:
       - .env
     environment:
-      RABBITMQ_DEFAULT_USER: ${QUEUE_USERNAME}
-      RABBITMQ_DEFAULT_PASS: ${QUEUE_PASSWORD}
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit heartbeat 600000 -rabbit server_handshake_timeout 600000 -rabbit consumer_timeout 600000 -rabbit channel_max 2048
+      - RABBITMQ_DISK_FREE_LIMIT=2GB
+      - RABBITMQ_DEFAULT_USER=${QUEUE_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${QUEUE_PASSWORD}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -117,11 +122,13 @@ services:
       - internal_network
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 120s
+      timeout: 60s
+      retries: 10
+      start_period: 30s
 
   redis:
     image: "redis:6.2"

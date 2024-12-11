@@ -1,22 +1,27 @@
-from sqlalchemy import Boolean, Column, DateTime, Index, Integer, String
-from sqlalchemy.sql import func
+from datetime import datetime
+from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Enum
+from sqlalchemy.orm import relationship
+import enum
 
 from api_template.db.base import Base
 
+class TaskStatus(enum.Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
-class Task(Base):
-    __tablename__ = "tasks"
+class BackgroundTask(Base):
+    __tablename__ = "background_tasks"
 
-    id = Column(Integer, primary_key=True, index=True)
-    task_id = Column(String, unique=True, nullable=False, index=True)
-    function_name = Column(String, nullable=False)
-    agent_id = Column(Integer, nullable=False)
-    description = Column(String)
-    status = Column(String, nullable=False)
-    input_data = Column(String)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    retry = Column(Boolean, default=True)
-    output_data = Column(String)
+    id = Column(String(36), primary_key=True)
+    session_id = Column(String(36), ForeignKey("sessions.id"), nullable=True)
+    task_type = Column(String, nullable=False)  # String livre para suportar qualquer tipo de tarefa
+    status = Column(Enum(TaskStatus), default=TaskStatus.PENDING)
+    result_data = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    __table_args__ = (Index("idx_task_id", task_id),)
+    # Relationships
+    session = relationship("Session", back_populates="tasks")
+    events = relationship("Event", back_populates="task")

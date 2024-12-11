@@ -2,6 +2,7 @@ import asyncio
 import logging
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from contextlib import asynccontextmanager
+import os
 
 import psutil
 from fastapi import FastAPI
@@ -29,16 +30,26 @@ async def lifespan_handler(app: FastAPI):
     """
     logger.info("Starting lifespan_handler...")
     app.state.executor = ProcessPoolExecutor()
-    consumers_publishers = setup_queue()
+    
+    # Verifica se deve inicializar as filas
+    should_setup_queues = os.getenv('ENABLE_QUEUE_SETUP', 'true').lower() == 'true'
+    consumers_publishers = []
+    
+    if should_setup_queues:
+        logger.info("Setting up message queues...")
+        consumers_publishers = setup_queue()
+    else:
+        logger.info("Queue setup disabled by environment variable")
 
     yield
 
     logger.info("Shutting down lifespan_handler...")
-    for consumer, publisher in consumers_publishers:
-        if consumer:
-            await consumer.close_connection()
-        if publisher:
-            await publisher.close_connection()
+    if should_setup_queues:
+        for consumer, publisher in consumers_publishers:
+            if consumer:
+                await consumer.close_connection()
+            if publisher:
+                await publisher.close_connection()
 
     app.state.executor.shutdown()
 

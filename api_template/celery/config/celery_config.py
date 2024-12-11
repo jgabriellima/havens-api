@@ -21,8 +21,8 @@ class CeleryConfig:
     enable_utc = True
 
     task_routes = {
-        "api_template.celery.tasks.user_tasks.*": {"queue": "user_tasks"},
-        "api_template.celery.tasks.general_tasks.*": {"queue": "general_tasks"},
+        # "api_template.celery.tasks.user_tasks.*": {"queue": "user_tasks"},
+        # "api_template.celery.tasks.general_tasks.*": {"queue": "general_tasks"},
     }
 
     task_default_queue = "default"

@@ -10,11 +10,8 @@ def get_celery_app():
     )
     
     # Descoberta automática de tasks
-    app.autodiscover_tasks(['api_template.celery.tasks.document_tasks'], force=True)
-    from api_template.celery.tasks.document_tasks import InitializeDocumentProcessingTask, FinalizeDocumentProcessingTask, ProcessDocumentPagesTask
-    app.register_task(InitializeDocumentProcessingTask())
-    app.register_task(FinalizeDocumentProcessingTask())
-    app.register_task(ProcessDocumentPagesTask())
+    app.autodiscover_tasks(['api_template.celery.tasks'], force=True)
+    
     # Log das tasks registradas
     registered_tasks = app.tasks.keys()
     print("=" * 50)

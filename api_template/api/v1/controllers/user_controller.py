@@ -9,9 +9,8 @@ from api_template.api.common.errors import APIError
 from api_template.api.common.pagination import Page, Paginator, paginate
 from api_template.api.v1.auth.auth import get_current_active_user, require_auth
 from api_template.api.v1.dependencies import get_db
-from api_template.api.v1.schemas.user_schemas import UserCreate, UserResponse, UserUpdate
+from api_template.api.v1.schemas.user_schemas import UserCreate, UserResponse, UserUpdate, InternalUserCreate, ClientUserCreate, EndUserCreate, EndUserResponse, ClientUserResponse
 from api_template.api.v1.services.user_service import UserService
-from api_template.celery.tasks.general_tasks import example_task
 from api_template.db.models.user import User
 from api_template.queue.core.manager.queue_manager import queue_manager
 
@@ -116,12 +115,43 @@ async def test_queue(message: str, request: Request):
 
 @router.get("/test-task-without-result", response_model=dict)
 async def test_task_without_result(message: str, request: Request):
-    task_id = example_task.delay(message)
-    return {"status": f"Message sent to queue successfully: {task_id}"}
+    # task_id = example_task.delay(message)
+    return {"status": f"Message sent to queue successfully"}
 
 
 @router.get("/test-task-with-result", response_model=dict)
 async def test_task_with_result(message: str, request: Request):
-    task_id = example_task.delay(message)
-    result = AsyncResult(task_id.id)
-    return {"status": f"Message sent to queue successfully: {task_id.id}", "result": result.get()}
+    # task_id = example_task.delay(message)
+    # result = AsyncResult(task_id.id)
+    return {"status": f"Message sent to queue successfully"}
+
+
+@router.post("/internal-users/", response_model=UserResponse)
+@require_auth
+async def create_internal_user(
+    user: InternalUserCreate,
+    current_user: User = Depends(get_current_active_user),
+    user_service: UserService = Depends(get_user_service),
+):
+    """Create internal user (admin, staff)"""
+    return await user_service.create_internal_user(user)
+
+
+@router.post("/client-users/", response_model=ClientUserResponse)
+@require_auth
+async def create_client_user(
+    user: ClientUserCreate,
+    current_user: User = Depends(get_current_active_user),
+    user_service: UserService = Depends(get_user_service),
+):
+    """Create client user (e.g., broker)"""
+    return await user_service.create_client_user(user)
+
+
+@router.post("/end-users/", response_model=EndUserResponse)
+async def create_end_user(
+    user: EndUserCreate,
+    user_service: UserService = Depends(get_user_service),
+):
+    """Create end user (e.g., buyer, investor)"""
+    return await user_service.create_end_user(user)

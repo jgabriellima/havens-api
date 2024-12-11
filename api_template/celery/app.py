@@ -2,7 +2,7 @@ from celery import Celery
 
 from api_template.celery.config.celery_config import CeleryConfig
 
-mapped_tasks = ["api_template.celery.tasks.general_tasks", "api_template.celery.tasks.user_tasks"]
+mapped_tasks = []
 
 
 def create_celery_app():

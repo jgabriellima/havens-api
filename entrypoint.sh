@@ -1,12 +1,10 @@
 #!/bin/bash
 set -e
 
-
-
 # Ensure the MODE environment variable is set
 if [ -z "$MODE" ]; then
   echo "Error: MODE environment variable is not set."
-  echo "Please set the MODE environment variable to 'api', 'worker', 'beat', 'flower', or 'debug'."
+  echo "Please set the MODE environment variable to 'api', 'worker', 'beat', 'flower', 'debug', 'alembic', or 'test'."
   exit 1
 fi
 
@@ -32,9 +30,11 @@ wait_for_service() {
   echo "$1 is up - executing command"
 }
 
-# Wait for dependent services
-wait_for_service "RabbitMQ" ${RABBITMQ_HOST:-rabbitmq} ${RABBITMQ_PORT:-5672}
-wait_for_service "Redis" ${REDIS_HOST:-redis} ${REDIS_PORT:-6379}
+# Function to wait for all required services
+wait_for_services() {
+  wait_for_service "RabbitMQ" ${RABBITMQ_HOST:-rabbitmq} ${RABBITMQ_PORT:-5672}
+  wait_for_service "Redis" ${REDIS_HOST:-redis} ${REDIS_PORT:-6379}
+}
 
 # Function to run database migrations
 run_migrations() {
@@ -49,42 +49,51 @@ run_migrations() {
 trap 'echo "Received SIGTERM. Shutting down..."; kill -TERM $PID; wait $PID' TERM
 
 # Start the correct service based on the MODE environment variable
-if [ "$MODE" = "api" ]; then
+if [ "$MODE" = "alembic" ]; then
+    echo "Running Alembic command..."
+    shift  # Remove 'alembic' from the arguments
+    exec alembic "$@"
+elif [ "$MODE" = "test" ]; then
+    echo "Running tests..."
+    shift  # Remove 'test' from the arguments
+    exec pytest "$@"
+elif [ "$MODE" = "api" ]; then
     echo "Starting API service..."
-    run_migrations  # Run migrations before starting the API
+    wait_for_services  # Espera pelos serviços apenas quando necessário
+    run_migrations
     if [ "$ENV" = "dev" ]; then
-      # Development mode with live reload
       exec uvicorn api_template.server:app --host 0.0.0.0 --port ${API_PORT:-8000} --reload --log-level debug
     else
-      # Production mode
       exec uvicorn api_template.server:app --host 0.0.0.0 --port ${API_PORT:-8000} --workers ${API_WORKERS:-4} --log-config /app/log_config.json
     fi
 elif [ "$MODE" = "worker" ]; then
     echo "Starting Celery worker..."
-    start_healthcheck  # Start healthcheck service before launching the worker
+    wait_for_services  # Espera pelos serviços apenas quando necessário
+    start_healthcheck
     if [ "$ENV" = "dev" ]; then
-      # Development mode with autoreload
       exec celery -A api_template.celery.celery_app worker --loglevel=${LOG_LEVEL:-info} --pool=solo &
     else
-      # Production mode
       exec celery -A api_template.celery.celery_app worker --loglevel=${LOG_LEVEL:-info} &
     fi
     PID=$!
     wait $PID
 elif [ "$MODE" = "beat" ]; then
     echo "Starting Celery beat..."
+    wait_for_services  # Espera pelos serviços apenas quando necessário
     exec celery -A api_template.celery.celery_app beat --loglevel=${LOG_LEVEL:-info} &
     PID=$!
     wait $PID
 elif [ "$MODE" = "flower" ]; then
     echo "Starting Flower Monitoring..."
+    wait_for_services  # Espera pelos serviços apenas quando necessário
     exec celery -A api_template.celery.celery_app flower &
     PID=$!
     wait $PID
 elif [ "$MODE" = "debug" ]; then
     echo "Starting in debug mode..."
+    wait_for_services  # Espera pelos serviços apenas quando necessário
     exec uvicorn api_template.server:app --host 0.0.0.0 --port ${API_PORT:-8000} --reload --log-level debug
 else
-    echo "Invalid MODE. Use 'api', 'worker', 'beat', 'flower', or 'debug'."
+    echo "Invalid MODE. Use 'api', 'worker', 'beat', 'flower', 'debug', 'alembic', or 'test'."
     exit 1
 fi
